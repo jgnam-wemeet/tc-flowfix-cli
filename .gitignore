@@ -15,5 +15,8 @@ Thumbs.db
 # Go
 vendor/
 
+# Issues (local troubleshooting)
+issues/
+
 # OMC
 .omc/
