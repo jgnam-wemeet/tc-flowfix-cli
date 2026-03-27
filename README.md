@@ -36,36 +36,36 @@ flowfix config show
 ```yaml
 environments:
   production:
-    host: 127.0.0.1
+    host: your-db-host
     port: 3306
-    user: admin
+    user: your-user
     password: your-password
-    database: tc_logistics
+    database: your-database
     ssh_tunnel:
       enabled: true
-      host: 211.188.53.49
+      host: your-ssh-host
       port: 22
-      user: platform
-      key_path: ~/.ssh/pemkey.pem
+      user: your-ssh-user
+      key_path: ~/.ssh/your-key.pem
   staging:
-    host: 127.0.0.1
+    host: your-db-host
     port: 3306
-    user: admin
+    user: your-user
     password: your-password
-    database: tc_logistics
+    database: your-database
     ssh_tunnel:
       enabled: true
-      host: 211.188.53.49
+      host: your-ssh-host
       port: 22
-      user: platform
-      key_path: ~/.ssh/pemkey.pem
+      user: your-ssh-user
+      key_path: ~/.ssh/your-key.pem
 local:
   docker:
     container_name: mysql
     image: mysql:8.0
     port: 3306
     root_password: your-password
-    network: tc-flowfix-platform
+    network: your-network
 dump:
   output_dir: ~/.flowfix/dumps
   compress: true
