@@ -40,7 +40,14 @@ if [ "$(uname)" = "Darwin" ]; then
 fi
 
 echo "==> 설치 완료! (${INSTALL_DIR}/${BINARY})"
+
+# 설정 파일이 없으면 자동 초기화
+CONFIG_FILE="$HOME/.flowfix/config.yaml"
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "==> 설정 파일 초기화 중..."
+    "${INSTALL_DIR}/${BINARY}" config init
+fi
+
 echo ""
-echo "초기 설정:"
-echo "  flowfix config init"
-echo "  vim ~/.flowfix/config.yaml"
+echo "다음 단계:"
+echo "  vim ~/.flowfix/config.yaml  # DB 접속 정보 입력"
