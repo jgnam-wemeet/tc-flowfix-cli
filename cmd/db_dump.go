@@ -139,7 +139,25 @@ func setupSSHTunnel(envCfg config.Environment) (int, *exec.Cmd, error) {
 	}
 
 	if tunnel.KeyPath != "" {
-		args = append([]string{"-i", tunnel.KeyPath}, args...)
+		// ~ 경로 확장
+		keyPath := tunnel.KeyPath
+		if len(keyPath) > 0 && keyPath[0] == '~' {
+			home, _ := os.UserHomeDir()
+			keyPath = home + keyPath[1:]
+		}
+
+		info, err := os.Stat(keyPath)
+		if err != nil {
+			return 0, nil, fmt.Errorf("SSH 키 파일을 찾을 수 없습니다: %s", keyPath)
+		}
+
+		// 권한 체크 (600 또는 400이어야 함)
+		perm := info.Mode().Perm()
+		if perm&0077 != 0 {
+			return 0, nil, fmt.Errorf("SSH 키 파일 권한이 너무 개방적입니다: %s (%04o)\n  수정: chmod 600 %s", keyPath, perm, keyPath)
+		}
+
+		args = append([]string{"-i", keyPath}, args...)
 	}
 
 	cmd := exec.Command("ssh", args...)
