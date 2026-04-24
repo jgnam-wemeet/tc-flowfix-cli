@@ -7,12 +7,14 @@ tc-flowfix-platform 비즈니스 유틸리티 CLI
 ## 설치
 
 ```bash
-# 빌드
-go build -o flowfix .
+curl -sSL https://raw.githubusercontent.com/jgnam-wemeet/tc-flowfix-cli/main/install.sh | bash
+```
 
-# 또는 글로벌 설치
-go install .
-ln -s ~/go/bin/tc-flowfix-cli ~/go/bin/flowfix
+### 소스에서 빌드
+
+```bash
+go build -o flowfix .
+sudo mv flowfix /usr/local/bin/
 ```
 
 ## 설정
@@ -78,10 +80,24 @@ dump:
 | `flowfix db dump <env>` | 원격 DB를 로컬 Docker MySQL로 덤프 & 복원 |
 | `flowfix db dump <env> --skip-import` | 덤프 파일만 생성 (로컬 임포트 생략) |
 | `flowfix db list` | 덤프 파일 목록 조회 |
+| `flowfix db backup` | 로컬 Docker MySQL 데이터베이스를 파일로 백업 |
+| `flowfix db restore` | 덤프 파일을 선택하여 로컬 Docker MySQL에 복원 |
 | `flowfix config init` | 설정 파일 초기화 |
 | `flowfix config show` | 현재 설정 표시 |
 
 `<env>`는 `production` 또는 `staging`
+
+## 동작 흐름 (`db backup`)
+
+1. **로컬 Docker MySQL 확인** - 컨테이너 실행 상태 확인
+2. **mysqldump 실행** - `docker exec`를 통해 로컬 DB를 `~/.flowfix/dumps/`에 백업 (gzip 압축)
+
+## 동작 흐름 (`db restore`)
+
+1. **덤프 파일 목록 표시** - `~/.flowfix/dumps/` 내 파일 목록을 번호와 함께 표시
+2. **번호 선택** - 복원할 파일 번호를 입력
+3. **Docker MySQL 준비** - 로컬 컨테이너 확인 및 자동 생성/시작
+4. **덤프 임포트** - 선택한 덤프 파일을 로컬 Docker MySQL에 복원
 
 ## 동작 흐름 (`db dump`)
 

@@ -23,7 +23,31 @@ type DumpInfo struct {
 	Compressed  bool
 }
 
+func findMysqldump() string {
+	if path, err := exec.LookPath("mysqldump"); err == nil {
+		return path
+	}
+	// brew 설치 경로에서 탐색
+	brewPaths := []string{
+		"/opt/homebrew/opt/mysql-client/bin/mysqldump", // Apple Silicon
+		"/usr/local/opt/mysql-client/bin/mysqldump",    // Intel Mac
+		"/opt/homebrew/bin/mysqldump",
+		"/usr/local/bin/mysqldump",
+	}
+	for _, p := range brewPaths {
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	return ""
+}
+
 func ExecuteDump(env string, envCfg config.Environment, dumpCfg config.DumpConfig, sshLocalPort int) (string, error) {
+	mysqldumpPath := findMysqldump()
+	if mysqldumpPath == "" {
+		return "", fmt.Errorf("mysqldump을 찾을 수 없습니다.\n  설치: brew install mysql-client\n  PATH 추가: echo 'export PATH=\"/opt/homebrew/opt/mysql-client/bin:$PATH\"' >> ~/.zshrc && source ~/.zshrc")
+	}
+
 	if err := os.MkdirAll(dumpCfg.OutputDir, 0700); err != nil {
 		return "", fmt.Errorf("덤프 디렉토리 생성 실패: %w", err)
 	}
@@ -58,7 +82,7 @@ func ExecuteDump(env string, envCfg config.Environment, dumpCfg config.DumpConfi
 
 	fmt.Printf("  mysqldump 실행 중 (%s:%s/%s)...\n", host, port, envCfg.Database)
 
-	cmd := exec.Command("mysqldump", args...)
+	cmd := exec.Command(mysqldumpPath, args...)
 	cmd.Stderr = os.Stderr
 
 	stdout, err := cmd.StdoutPipe()
@@ -67,7 +91,7 @@ func ExecuteDump(env string, envCfg config.Environment, dumpCfg config.DumpConfi
 	}
 
 	if err := cmd.Start(); err != nil {
-		return "", fmt.Errorf("mysqldump 실행 실패: %w\nmysqldump이 설치되어 있는지 확인하세요 (brew install mysql-client)", err)
+		return "", fmt.Errorf("mysqldump 실행 실패: %w", err)
 	}
 
 	outFile, err := os.Create(dumpPath)
@@ -185,6 +209,70 @@ func ListDumps(outputDir string) ([]DumpInfo, error) {
 	})
 
 	return dumps, nil
+}
+
+func BackupLocal(containerName string, rootPassword string, database string, dumpCfg config.DumpConfig) (string, error) {
+	if err := os.MkdirAll(dumpCfg.OutputDir, 0700); err != nil {
+		return "", fmt.Errorf("덤프 디렉토리 생성 실패: %w", err)
+	}
+
+	timestamp := time.Now().Format("20060102_150405")
+	filename := fmt.Sprintf("%s_local_%s.sql", database, timestamp)
+	if dumpCfg.Compress {
+		filename += ".gz"
+	}
+	dumpPath := filepath.Join(dumpCfg.OutputDir, filename)
+
+	args := []string{
+		"exec", containerName,
+		"mysqldump",
+		fmt.Sprintf("-p%s", rootPassword),
+		"--single-transaction",
+		"--routines",
+		"--triggers",
+		"--set-gtid-purged=OFF",
+		"--column-statistics=0",
+		"--no-tablespaces",
+		database,
+	}
+
+	cmd := exec.Command("docker", args...)
+	cmd.Stderr = os.Stderr
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", fmt.Errorf("mysqldump stdout 파이프 생성 실패: %w", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return "", fmt.Errorf("mysqldump 실행 실패: %w", err)
+	}
+
+	outFile, err := os.Create(dumpPath)
+	if err != nil {
+		cmd.Process.Kill()
+		return "", fmt.Errorf("백업 파일 생성 실패: %w", err)
+	}
+	defer outFile.Close()
+
+	var writer io.Writer = outFile
+	if dumpCfg.Compress {
+		gzWriter := gzip.NewWriter(outFile)
+		defer gzWriter.Close()
+		writer = gzWriter
+	}
+
+	if _, err := io.Copy(writer, stdout); err != nil {
+		cmd.Process.Kill()
+		return "", fmt.Errorf("백업 데이터 저장 실패: %w", err)
+	}
+
+	if err := cmd.Wait(); err != nil {
+		os.Remove(dumpPath)
+		return "", fmt.Errorf("mysqldump 실패: %w", err)
+	}
+
+	return dumpPath, nil
 }
 
 func FormatSize(bytes int64) string {

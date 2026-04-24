@@ -12,4 +12,6 @@ var dbCmd = &cobra.Command{
 func init() {
 	dbCmd.AddCommand(dbDumpCmd)
 	dbCmd.AddCommand(dbListCmd)
+	dbCmd.AddCommand(dbBackupCmd)
+	dbCmd.AddCommand(dbRestoreCmd)
 }
