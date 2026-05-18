@@ -7,7 +7,7 @@ tc-flowfix-platform 비즈니스 유틸리티 CLI
 ## 설치
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/jgnam-wemeet/tc-flowfix-cli/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/wemeet-jeonggilnam/tc-flowfix-cli/main/install.sh | bash
 ```
 
 ### 소스에서 빌드
