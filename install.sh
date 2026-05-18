@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-REPO="jgnam-wemeet/tc-flowfix-cli"
+REPO="wemeet-jeonggilnam/tc-flowfix-cli"
 INSTALL_DIR="/usr/local/bin"
 BINARY="flowfix"
 
