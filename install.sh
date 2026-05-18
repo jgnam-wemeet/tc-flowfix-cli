@@ -8,7 +8,7 @@ BINARY="flowfix"
 echo "==> tc-flowfix-cli 설치 중..."
 
 # GitHub 최신 릴리즈에서 다운로드
-LATEST_TAG=$(curl -sI "https://github.com/${REPO}/releases/latest" | grep -i "^location:" | sed 's/.*tag\///' | tr -d '\r\n')
+LATEST_TAG=$(curl -sIL "https://github.com/${REPO}/releases/latest" 2>/dev/null | grep -i "^location:" | tail -1 | sed 's/.*tag\///' | tr -d '\r\n')
 if [ -z "$LATEST_TAG" ]; then
     echo "오류: 최신 릴리즈를 찾을 수 없습니다."
     exit 1
